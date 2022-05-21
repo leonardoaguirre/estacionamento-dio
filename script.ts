@@ -1,7 +1,7 @@
 interface Veiculo {
     nome: string;
     placa: string;
-    entrada: Date;
+    entrada: Date | string;
 }
 
 (function () {
@@ -15,13 +15,14 @@ interface Veiculo {
             alert('O nome e placa são obrigatorios!');
             return;
         }
-        patio().adicionar({ nome, placa, entrada: new Date() }, true)
+        patio().adicionar({ nome, placa, entrada: new Date().toISOString() }, true)
     })
 
     function patio() {
         function ler(): Veiculo[] {
             return localStorage.patio ? JSON.parse(localStorage.patio) : []
         }
+
         function adicionar(veiculo: Veiculo, salva?: boolean) {
             const linha = document.createElement("tr")
 
@@ -34,14 +35,33 @@ interface Veiculo {
 
             q("#tbpatio")?.appendChild(linha)
 
+            linha.querySelector(".delete")?.addEventListener('click', function () {
+                remover(this.dataset.placa)
+            })
+
             if (salva) salvar([...ler(), veiculo])
         }
-        function remover() {
 
+        function remover(placa: string) {
+            const veiculo = ler().find(veiculo => veiculo.placa == placa)
+
+            const tempo = calcTempo(new Date().getTime() - new Date(veiculo.entrada).getTime())
+
+            if (!confirm(`O veiculo ${veiculo.nome} permaneceu por ${tempo}. Deseja encerrar?`)) return
+            salvar(ler().filter(vec => vec.placa == veiculo.placa))
+            renderizar()
+        }
+
+        function calcTempo(milisegundos: number): string {
+            const minutos = Math.floor(milisegundos / 60000)
+            const segundos = Math.floor((milisegundos % 60000) / 1000)
+
+            return `${minutos} minuto(s) e ${segundos} segundo(s)`
         }
         function salvar(veiculos: Veiculo[]) {
             localStorage.setItem('patio', JSON.stringify(veiculos))
         }
+
         function renderizar() {
             q("#tbpatio")!.innerHTML = ''
             const patio = ler()
